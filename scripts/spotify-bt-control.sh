@@ -133,14 +133,21 @@ except Exception as e:
 
     # DEBUG: Log connection attempt
     echo "DEBUG: Attempting to connect to: $mac" >&2
+    echo "DEBUG: Using timeout of ${BT_CONNECT_TIMEOUT}s" >&2
 
-    # Connect
+    # Connect with timeout
     local connect_output
-    connect_output=$(blueutil --connect "$mac" 2>&1)
+    connect_output=$(timeout "$BT_CONNECT_TIMEOUT" blueutil --connect "$mac" 2>&1)
     local connect_status=$?
 
     echo "DEBUG: blueutil --connect exit code: $connect_status" >&2
     echo "DEBUG: blueutil --connect output: $connect_output" >&2
+
+    # Check for timeout (exit code 124)
+    if [ $connect_status -eq 124 ]; then
+        echo "{\"error\": \"Connection timeout after ${BT_CONNECT_TIMEOUT}s\"}" >&2
+        exit 1
+    fi
 
     if [ $connect_status -eq 0 ]; then
         # Wait a bit for connection to establish
