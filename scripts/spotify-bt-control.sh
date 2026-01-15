@@ -130,14 +130,29 @@ except Exception as e:
 
     # Format MAC address for blueutil commands (lowercase with dashes)
     mac=$(echo "$mac_normalized" | tr '[:upper:]' '[:lower:]' | tr ':' '-')
-    
+
+    # DEBUG: Log connection attempt
+    echo "DEBUG: Attempting to connect to: $mac" >&2
+
     # Connect
-    if blueutil --connect "$mac" 2>/dev/null; then
+    local connect_output
+    connect_output=$(blueutil --connect "$mac" 2>&1)
+    local connect_status=$?
+
+    echo "DEBUG: blueutil --connect exit code: $connect_status" >&2
+    echo "DEBUG: blueutil --connect output: $connect_output" >&2
+
+    if [ $connect_status -eq 0 ]; then
         # Wait a bit for connection to establish
+        echo "DEBUG: Waiting ${BT_CONNECT_WAIT}s for connection..." >&2
         sleep "$BT_CONNECT_WAIT"
-        
+
         # Verify connection
-        if blueutil --is-connected "$mac" 2>/dev/null | grep -q "1"; then
+        local is_connected_output
+        is_connected_output=$(blueutil --is-connected "$mac" 2>&1)
+        echo "DEBUG: blueutil --is-connected output: $is_connected_output" >&2
+
+        if echo "$is_connected_output" | grep -q "1"; then
             echo "{\"success\": true, \"address\": \"$mac\", \"connected\": true}"
         else
             echo "{\"success\": false, \"address\": \"$mac\", \"error\": \"Connection failed\"}" >&2
