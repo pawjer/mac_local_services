@@ -1,0 +1,10 @@
+# TheengsGateway
+# BLE to MQTT bridge for sensors
+# Publishes to: home/TheengsGateway/#
+
+NAME=theengs
+TYPE=script
+CMD=scripts/theengs-start.sh
+WAIT_FOR=tcp:localhost:1883
+ENV_FILE=env/theengs.env
+STOP_PATTERN=TheengsGateway

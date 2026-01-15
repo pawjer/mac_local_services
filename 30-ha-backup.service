@@ -1,0 +1,10 @@
+# Home Assistant Database Rolling Backup
+# Backs up HA database periodically, keeps last 7 days
+
+NAME=ha-backup
+TYPE=script
+CMD=scripts/ha-backup.sh
+ENV=HA_CONFIG=/Users/proboszcz/Devel/HomeAssistant/config
+ENV=BACKUP_DIR=/Users/proboszcz/Devel/HomeAssistant/backups/db
+ENV=BACKUP_INTERVAL_HOURS=24
+ENV=BACKUP_KEEP_DAYS=14

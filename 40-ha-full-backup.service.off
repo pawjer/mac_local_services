@@ -1,0 +1,11 @@
+# Home Assistant Full Directory Backup
+# Backs up entire HA directory with space check
+
+# NAME=ha-full-backup
+# TYPE=script
+# CMD=scripts/ha-full-backup.sh
+# ENV=HA_DIR=/Users/proboszcz/Devel/HomeAssistant
+# ENV=BACKUP_DIR=/Users/proboszcz/Devel/HomeAssistant/backups/full
+# ENV=BACKUP_INTERVAL_HOURS=24
+# ENV=BACKUP_KEEP_DAYS=7
+# ENV=MIN_FREE_SPACE_GB=10

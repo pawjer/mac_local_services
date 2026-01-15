@@ -1,0 +1,3 @@
+# BLE Proxy Server
+NAME=ble-proxy
+CMD=ble-proxy-server --port 8765

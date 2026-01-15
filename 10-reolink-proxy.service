@@ -1,0 +1,10 @@
+# Reolink Camera Proxy
+# Forwards local ports to camera on remote network
+# Uses socat for TCP forwarding
+
+NAME=reolink-proxy
+TYPE=script
+CMD=scripts/reolink-socat.sh
+ENV=REOLINK_IP=10.0.0.128
+ENV=REOLINK_PORTS=18080:80 18554:554 18000:8000 19000:9000
+STOP_PATTERN=socat.*10.0.0.128
