@@ -83,20 +83,36 @@ except Exception as e:
 
 cmd_connect() {
     local mac="${1:-}"
-    
+
     if [ -z "$mac" ]; then
         echo '{"error": "MAC address required"}' >&2
         exit 1
     fi
-    
-    # Format MAC address (blueutil likes lowercase with dashes)
-    mac=$(echo "$mac" | tr '[:upper:]' '[:lower:]' | tr ':' '-')
-    
-    # Check if device is paired
-    if ! blueutil --paired | grep -qi "$mac"; then
-        echo "{\"error\": \"Device $mac not paired\"}" >&2
+
+    # Normalize MAC address for comparison (uppercase with colons)
+    local mac_normalized
+    mac_normalized=$(echo "$mac" | tr '[:lower:]' '[:upper:]' | tr '-' ':')
+
+    # Check if device is paired using JSON format
+    local paired_devices
+    paired_devices=$(blueutil --paired --format json 2>/dev/null || echo "[]")
+
+    if ! echo "$paired_devices" | python3 -c "
+import sys, json
+try:
+    devices = json.load(sys.stdin)
+    target_mac = '''$mac_normalized'''
+    found = any(d.get('address', '').upper() == target_mac for d in devices)
+    sys.exit(0 if found else 1)
+except:
+    sys.exit(1)
+"; then
+        echo "{\"error\": \"Device $mac_normalized not paired\"}" >&2
         exit 1
     fi
+
+    # Format MAC address for blueutil commands (lowercase with dashes)
+    mac=$(echo "$mac_normalized" | tr '[:upper:]' '[:lower:]' | tr ':' '-')
     
     # Connect
     if blueutil --connect "$mac" 2>/dev/null; then
@@ -118,13 +134,13 @@ cmd_connect() {
 
 cmd_disconnect() {
     local mac="${1:-}"
-    
+
     if [ -z "$mac" ]; then
         echo '{"error": "MAC address required"}' >&2
         exit 1
     fi
-    
-    # Format MAC address
+
+    # Normalize and format MAC address for blueutil commands (lowercase with dashes)
     mac=$(echo "$mac" | tr '[:upper:]' '[:lower:]' | tr ':' '-')
     
     # Disconnect
