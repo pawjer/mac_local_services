@@ -93,18 +93,35 @@ cmd_connect() {
     local mac_normalized
     mac_normalized=$(echo "$mac" | tr '[:lower:]' '[:upper:]' | tr '-' ':')
 
+    # DEBUG: Log environment and input
+    echo "DEBUG: BLUEUTIL_USE_SYSTEM_PROFILER=$BLUEUTIL_USE_SYSTEM_PROFILER" >&2
+    echo "DEBUG: Input MAC: $mac" >&2
+    echo "DEBUG: Normalized MAC: $mac_normalized" >&2
+
     # Check if device is paired using JSON format
     local paired_devices
-    paired_devices=$(blueutil --paired --format json 2>/dev/null || echo "[]")
+    paired_devices=$(blueutil --paired --format json 2>&1)
+
+    # DEBUG: Log blueutil output
+    echo "DEBUG: blueutil output: $paired_devices" >&2
 
     if ! echo "$paired_devices" | python3 -c "
 import sys, json
 try:
     devices = json.load(sys.stdin)
     target_mac = '''$mac_normalized'''
+    print(f'DEBUG: Parsed {len(devices)} devices', file=sys.stderr)
+    print(f'DEBUG: Looking for: {target_mac}', file=sys.stderr)
+    for d in devices:
+        addr = d.get('address', '').upper()
+        print(f'DEBUG: Found device: {addr}', file=sys.stderr)
     found = any(d.get('address', '').upper() == target_mac for d in devices)
+    print(f'DEBUG: Match found: {found}', file=sys.stderr)
     sys.exit(0 if found else 1)
-except:
+except Exception as e:
+    print(f'DEBUG: Python error: {e}', file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
     sys.exit(1)
 "; then
         echo "{\"error\": \"Device $mac_normalized not paired\"}" >&2
