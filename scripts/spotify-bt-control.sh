@@ -135,13 +135,23 @@ except Exception as e:
     echo "DEBUG: Attempting to connect to: $mac" >&2
     echo "DEBUG: Using timeout of ${BT_CONNECT_TIMEOUT}s" >&2
 
-    # Connect with timeout
+    # Check which tool to use for connection
+    local connect_cmd
     local connect_output
-    connect_output=$(timeout "$BT_CONNECT_TIMEOUT" blueutil --connect "$mac" 2>&1)
-    local connect_status=$?
+    local connect_status
 
-    echo "DEBUG: blueutil --connect exit code: $connect_status" >&2
-    echo "DEBUG: blueutil --connect output: $connect_output" >&2
+    if command -v BluetoothConnector &>/dev/null; then
+        echo "DEBUG: Using BluetoothConnector" >&2
+        connect_output=$(timeout "$BT_CONNECT_TIMEOUT" BluetoothConnector --connect "$mac" 2>&1)
+        connect_status=$?
+    else
+        echo "DEBUG: Using blueutil (BluetoothConnector not found)" >&2
+        connect_output=$(timeout "$BT_CONNECT_TIMEOUT" blueutil --connect "$mac" 2>&1)
+        connect_status=$?
+    fi
+
+    echo "DEBUG: Connect command exit code: $connect_status" >&2
+    echo "DEBUG: Connect command output: $connect_output" >&2
 
     # Check for timeout (exit code 124)
     if [ $connect_status -eq 124 ]; then
@@ -179,11 +189,20 @@ cmd_disconnect() {
         exit 1
     fi
 
-    # Normalize and format MAC address for blueutil commands (lowercase with dashes)
+    # Normalize and format MAC address (lowercase with dashes)
     mac=$(echo "$mac" | tr '[:upper:]' '[:lower:]' | tr ':' '-')
-    
-    # Disconnect
-    if blueutil --disconnect "$mac" 2>/dev/null; then
+
+    # Disconnect using BluetoothConnector if available, otherwise blueutil
+    local disconnect_status
+    if command -v BluetoothConnector &>/dev/null; then
+        BluetoothConnector --disconnect "$mac" 2>/dev/null
+        disconnect_status=$?
+    else
+        blueutil --disconnect "$mac" 2>/dev/null
+        disconnect_status=$?
+    fi
+
+    if [ $disconnect_status -eq 0 ]; then
         echo "{\"success\": true, \"address\": \"$mac\", \"connected\": false}"
     else
         echo "{\"error\": \"Failed to disconnect $mac\"}" >&2
