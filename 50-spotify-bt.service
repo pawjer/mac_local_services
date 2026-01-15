@@ -1,0 +1,9 @@
+# Spotify BT API Server
+# REST API for controlling Bluetooth audio devices and Spotify
+NAME=spotify-bt
+TYPE=script
+CMD=scripts/spotify-bt-server.rb
+ENV_FILE=env/spotify-bt.env
+RESTART=always
+RESTART_DELAY=5
+STOP_PATTERN=spotify-bt-server
