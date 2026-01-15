@@ -74,11 +74,9 @@ def json(data)
 end
 
 def parse_json_body
-  return {} if request.body.size.zero?
-  
   request.body.rewind if request.body.respond_to?(:rewind)
   body_content = request.body.read
-  
+
   return {} if body_content.empty?
   
   JSON.parse(body_content, symbolize_names: true)
