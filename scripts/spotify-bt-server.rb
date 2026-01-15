@@ -48,8 +48,8 @@ CONTROL_SCRIPT = File.join(SCRIPT_DIR, 'spotify-bt-control.sh')
 
 def execute_command(*args)
   cmd = [CONTROL_SCRIPT] + args
-  
-  stdout, stderr, status = Open3.capture3(*cmd)
+
+  stdout, stderr, status = Open3.capture3(ENV.to_h, *cmd)
   
   unless status.success?
     error_msg = stderr.empty? ? stdout : stderr
