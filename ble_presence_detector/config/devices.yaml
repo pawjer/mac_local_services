@@ -1,0 +1,68 @@
+mqtt:
+  host: 10.9.0.3
+  port: 1883
+  topic_prefix: home/presence
+  qos: 1
+  client_id: ble_presence_detector
+
+scanner:
+  scan_interval: 5.0  # seconds between scan starts
+  scan_duration: 3.0  # duration of each scan
+
+state_file: state.json
+log_level: INFO
+
+devices:
+  # Real device: Probophone
+  - id: probophone
+    name: "Probophone"
+    identifiers:
+      - type: name
+        pattern: "Probophone"
+        regex: false
+    confidence_threshold: 0.5
+    decay_rate: 0.1
+
+  # Real device: KICKR CORE
+  - id: kickr_core
+    name: "KICKR CORE 9213"
+    identifiers:
+      - type: name
+        pattern: "KICKR CORE.*"
+        regex: true
+      - type: service_uuid
+        uuids:
+          - "00001818-0000-1000-8000-00805f9b34fb"  # Cycling Power
+        require_all: false
+    confidence_threshold: 0.5
+    decay_rate: 0.1
+
+  # Real device: Galaxy Watch
+  - id: galaxy_watch
+    name: "Galaxy Watch6"
+    identifiers:
+      - type: name
+        pattern: "Galaxy Watch.*"
+        regex: true
+    confidence_threshold: 0.5
+    decay_rate: 0.1
+
+  # Real device: Joanna's MacBook Pro
+  - id: joanna_macbook
+    name: "Joanna's MacBook Pro"
+    identifiers:
+      - type: name
+        pattern: "Joanna's MacBook Pro"
+        regex: false
+    confidence_threshold: 0.5
+    decay_rate: 0.1
+
+  # Real device: John's speaker
+  - id: john_speaker
+    name: "John Paulacton II"
+    identifiers:
+      - type: name
+        pattern: "John Paulacton II"
+        regex: false
+    confidence_threshold: 0.5
+    decay_rate: 0.1
