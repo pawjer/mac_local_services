@@ -2,7 +2,8 @@
 
 import json
 import logging
-from typing import Optional
+from typing import Optional, List, Tuple
+from collections import deque
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
 
@@ -35,6 +36,8 @@ class MQTTPublisher(StateObserver):
         self._config = config
         self._client: Optional[mqtt.Client] = None
         self._connected = False
+        self._reconnect_count = 0
+        self._pending_messages: deque = deque(maxlen=100)  # Buffer up to 100 messages
 
         logger.info(f"MQTT publisher initialized for {config.host}:{config.port}")
 
@@ -58,6 +61,10 @@ class MQTTPublisher(StateObserver):
 
             self._client.on_connect = self._on_connect
             self._client.on_disconnect = self._on_disconnect
+
+            # Enable automatic reconnection with exponential backoff
+            # Min delay: 1 second, Max delay: 120 seconds (2 minutes)
+            self._client.reconnect_delay_set(min_delay=1, max_delay=120)
 
             logger.info(f"Connecting to MQTT broker at {self._config.host}:{self._config.port}")
             self._client.connect(
@@ -88,12 +95,46 @@ class MQTTPublisher(StateObserver):
             self._connected = False
             logger.info("Disconnected from MQTT broker")
 
+    def is_connected(self) -> bool:
+        """Check if connected to MQTT broker.
+
+        Returns:
+            True if connected, False otherwise
+        """
+        return self._connected
+
+    def _flush_pending_messages(self) -> None:
+        """Publish any messages that were buffered during disconnection."""
+        if not self._pending_messages:
+            return
+
+        count = len(self._pending_messages)
+        logger.info(f"Flushing {count} pending message(s) to MQTT broker")
+
+        while self._pending_messages:
+            device_id, state = self._pending_messages.popleft()
+            try:
+                self._publish_state(device_id, state)
+                self._publish_attributes(device_id, state)
+                logger.debug(f"Flushed pending message for {device_id}")
+            except Exception as e:
+                logger.error(f"Failed to flush message for {device_id}: {e}")
+                # Re-add to queue if publish fails
+                self._pending_messages.append((device_id, state))
+                break  # Stop flushing if we hit an error
+
+        if self._pending_messages:
+            logger.warning(f"Still have {len(self._pending_messages)} pending message(s)")
+        else:
+            logger.info("All pending messages flushed successfully")
+
     async def on_state_change(self, device_id: str,
                              old_state: DevicePresenceState,
                              new_state: DevicePresenceState) -> None:
         """Called when device presence state changes.
 
-        Publishes state and attributes to MQTT.
+        Publishes state and attributes to MQTT. If disconnected, buffers
+        the message for later delivery.
 
         Args:
             device_id: Device ID
@@ -101,7 +142,12 @@ class MQTTPublisher(StateObserver):
             new_state: New state
         """
         if not self._connected or not self._client:
-            logger.warning(f"Not connected to MQTT, cannot publish state for {device_id}")
+            # Buffer message for delivery when reconnected
+            self._pending_messages.append((device_id, new_state))
+            logger.warning(
+                f"Not connected to MQTT, buffering state for {device_id} "
+                f"({len(self._pending_messages)} pending)"
+            )
             return
 
         try:
@@ -191,13 +237,22 @@ class MQTTPublisher(StateObserver):
         """
         if reason_code == 0:
             self._connected = True
-            logger.info("Connected to MQTT broker")
+            if self._reconnect_count > 0:
+                logger.info(f"Reconnected to MQTT broker after {self._reconnect_count} attempt(s)")
+                self._reconnect_count = 0
+            else:
+                logger.info("Connected to MQTT broker")
+
+            # Flush any pending messages
+            self._flush_pending_messages()
         else:
             self._connected = False
-            logger.error(f"Failed to connect to MQTT broker: {reason_code}")
+            logger.error(f"Failed to connect to MQTT broker: reason_code={reason_code}")
 
     def _on_disconnect(self, client, userdata, flags, reason_code, properties) -> None:
         """Called when disconnected from MQTT broker.
+
+        Automatically triggers reconnection with exponential backoff.
 
         Args:
             client: MQTT client
@@ -208,6 +263,10 @@ class MQTTPublisher(StateObserver):
         """
         self._connected = False
         if reason_code == 0:
-            logger.info("Disconnected from MQTT broker")
+            logger.info("Cleanly disconnected from MQTT broker")
         else:
-            logger.warning(f"Unexpected disconnect from MQTT broker: {reason_code}")
+            self._reconnect_count += 1
+            logger.warning(
+                f"Lost connection to MQTT broker (reason_code={reason_code}). "
+                f"Auto-reconnect attempt #{self._reconnect_count} starting..."
+            )
