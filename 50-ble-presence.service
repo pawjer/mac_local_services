@@ -3,8 +3,6 @@
 # Publishes to: home/presence/#
 
 NAME=ble-presence
-TYPE=script
-CMD=scripts/ble-presence-start.sh
+CMD=cd ble_presence_detector && venv/bin/python -m src.main config/devices.yaml
 WAIT_FOR=tcp:10.9.0.3:1883
 ENV_FILE=env/ble-presence.env
-STOP_PATTERN=ble_presence_detector
