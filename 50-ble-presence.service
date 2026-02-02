@@ -1,7 +1,10 @@
+# BLE Presence Detector
+# Tracks Bluetooth devices and publishes presence to MQTT
+# Publishes to: home/presence/#
+
 NAME=ble-presence
-TYPE=simple
-CMD=cd /Users/proboszcz/Devel/mac_local_services/ble_presence_detector && /Users/proboszcz/Devel/mac_local_services/ble_presence_detector/venv/bin/python -m src.main config/devices.yaml --env-file /Users/proboszcz/Devel/mac_local_services/env/ble-presence.env
+TYPE=script
+CMD=scripts/ble-presence-start.sh
 WAIT_FOR=tcp:10.9.0.3:1883
 ENV_FILE=env/ble-presence.env
-RESTART=always
-RESTART_DELAY=5
+STOP_PATTERN=ble_presence_detector
