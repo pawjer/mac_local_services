@@ -1,8 +1,9 @@
 # BLE Presence Detector
 # Tracks Bluetooth devices and publishes presence to MQTT
 # Publishes to: home/presence/#
+# Install: pipx install ./ble_presence_detector
 
 NAME=ble-presence
-CMD=cd ble_presence_detector && venv/bin/python -m src.main config/devices.yaml
+CMD=ble-presence-detector ble_presence_detector/config/devices.yaml --env-file env/ble-presence.env
 WAIT_FOR=tcp:10.9.0.3:1883
 ENV_FILE=env/ble-presence.env

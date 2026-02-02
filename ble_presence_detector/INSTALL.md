@@ -1,12 +1,46 @@
 # Installation Guide
 
+## Installation Method
+
+### Option 1: Using pipx (Recommended)
+
+Install as a standalone application, isolated from other Python packages:
+
+```bash
+# Install pipx if not already installed
+brew install pipx
+pipx ensurepath
+
+# Install BLE presence detector
+cd /Users/proboszcz/Devel/mac_local_services
+pipx install ./ble_presence_detector
+```
+
+Verify installation:
+```bash
+ble-presence-detector --help
+```
+
+### Option 2: Using venv
+
+Create a virtual environment (if you prefer not to use pipx):
+
+```bash
+cd /Users/proboszcz/Devel/mac_local_services/ble_presence_detector
+python3 -m venv venv
+./venv/bin/pip install -e .
+```
+
 ## Quick Start
 
 ### 1. Install Python Dependencies
 
+**If using pipx:** Already done during `pipx install`
+
+**If using venv:**
 ```bash
 cd /Users/proboszcz/Devel/mac_local_services/ble_presence_detector
-pip3 install -r requirements.txt
+./venv/bin/pip install -r requirements.txt
 ```
 
 ### 2. Configure Devices
