@@ -6,11 +6,6 @@
 
 set -euo pipefail
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BLE_DIR="$PROJECT_ROOT/ble_presence_detector"
-
 # Configuration with defaults
 MQTT_HOST="${MQTT_HOST:-localhost}"
 MQTT_PORT="${MQTT_PORT:-1883}"
@@ -28,6 +23,6 @@ echo "  Topic prefix: $MQTT_TOPIC_PREFIX"
 echo "  Scan: ${SCAN_INTERVAL}s interval, ${SCAN_DURATION}s duration"
 echo "  Log level: $LOG_LEVEL"
 
-cd "$BLE_DIR"
+cd ble_presence_detector
 
 exec ./venv/bin/python -m src.main config/devices.yaml
